@@ -9,17 +9,17 @@ from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, R
 
 
 @configclass
-class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
-    num_steps_per_env = 16
-    max_iterations = 150
+class NavigationEnvPPORunnerCfg(RslRlOnPolicyRunnerCfg):
+    num_steps_per_env = 8
+    max_iterations = 1500
     save_interval = 50
-    experiment_name = "cartpole_direct"
+    experiment_name = "anymal_c_navigation"
     policy = RslRlPpoActorCriticCfg(
-        init_noise_std=1.0,
+        init_noise_std=0.5,
         actor_obs_normalization=False,
         critic_obs_normalization=False,
-        actor_hidden_dims=[32, 32],
-        critic_hidden_dims=[32, 32],
+        actor_hidden_dims=[128, 128],
+        critic_hidden_dims=[128, 128],
         activation="elu",
     )
     algorithm = RslRlPpoAlgorithmCfg(

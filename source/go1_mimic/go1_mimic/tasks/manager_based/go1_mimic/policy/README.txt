@@ -1,0 +1,1 @@
+this dir contains the flat terrian locomition policy trained via Isaac-Velocity-Flat-Unitree-Go1-v0 task
