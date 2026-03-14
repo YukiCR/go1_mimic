@@ -21,7 +21,7 @@ from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors import CameraCfg, TiledCameraCfg, ContactSensorCfg, RayCasterCfg, RayCaster, patterns
-from isaaclab.terrains import TerrainImporterCfg, TerrainGeneratorCfg, MeshRepeatedBoxesTerrainCfg, MeshRepeatedCylindersTerrainCfg, MeshRepeatedPyramidsTerrainCfg, FlatPatchSamplingCfg
+from isaaclab.terrains import TerrainImporterCfg, TerrainGeneratorCfg, MeshRepeatedBoxesTerrainCfg, MeshRepeatedCylindersTerrainCfg, MeshRepeatedPyramidsTerrainCfg, MeshBoxTerrainCfg, HfDiscreteObstaclesTerrainCfg, FlatPatchSamplingCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR, check_file_path, read_file
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
@@ -133,6 +133,100 @@ REPEATED_OBS_TERRAINS_CFG = TerrainGeneratorCfg(
     },  
 )
 
+
+BOX_OBS_TERRAINS_CFG = TerrainGeneratorCfg(
+    size=(15.0, 15.0),
+    border_width=3.0,
+    num_rows=2,
+    num_cols=2,
+    horizontal_scale=0.1,
+    vertical_scale=0.005,
+    slope_threshold=0.75,
+    curriculum=True,
+    use_cache=False,
+    sub_terrains={
+        "box_array": MeshBoxTerrainCfg(
+                        box_height_range=(0.2, 0.2), 
+                        size=(20, 20),
+                        platform_width=3.0,
+                        flat_patch_sampling={
+                            "target": FlatPatchSamplingCfg(
+                                        num_patches=3,
+                                        patch_radius=[0.2],
+                                        max_height_diff=0.1,
+                                        x_range=(-10, 10), 
+                                        y_range=(-10, 10),
+                                        z_range=(-0.01, 0.01)
+                                    )
+                            }
+                    )
+        
+        }
+)
+
+DIS_OBS_TERRAINS_CFG = TerrainGeneratorCfg(
+    size=(15.0, 15.0),
+    border_width=3.0,
+    num_rows=10,
+    num_cols=10,
+    horizontal_scale=0.1,
+    vertical_scale=0.1,
+    slope_threshold=0.75,
+    curriculum=True,
+    use_cache=False,
+    sub_terrains={
+        # "obs": HfDiscreteObstaclesTerrainCfg(
+        #                 obstacle_height_mode = "fixed", 
+        #                 obstacle_width_range = (1.0, 1.2),
+        #                 obstacle_height_range= (1.0, 1.0),
+        #                 num_obstacles=5,
+        #                 platform_width=1.0,
+        #                 # horizontal_scale=5.0,
+        #                 flat_patch_sampling={
+        #                     "target": FlatPatchSamplingCfg(
+        #                                 num_patches=1,
+        #                                 patch_radius=[0.25, 0.5],
+        #                                 max_height_diff=0.1,
+        #                                 x_range=(-10, 10), 
+        #                                 y_range=(-10, 10),
+        #                                 z_range=(-0.01, 0.01)
+        #                             )
+        #                     }
+        #             ),
+
+        "repeated_boxes": MeshRepeatedBoxesTerrainCfg(
+                            proportion= 1.0,
+                            object_params_start= MeshRepeatedBoxesTerrainCfg.ObjectCfg(
+                                                        num_objects=15,
+                                                        height=2.0,
+                                                        size=(0.5, 0.5),
+                                                        max_yx_angle=0.0
+                                                    ),
+                            object_params_end= MeshRepeatedBoxesTerrainCfg.ObjectCfg(
+                                                        num_objects=25,
+                                                        height=2.0,
+                                                        size=(0.5, 0.5),
+                                                        max_yx_angle=0.0
+                                                    ),
+                            platform_width=1.0,
+                            platform_height=0.0,
+                            rel_height_noise=(1.0, 1.0),
+                            flat_patch_sampling={
+                                "target": FlatPatchSamplingCfg(
+                                            num_patches=40,
+                                            patch_radius=[0.25, 0.5, 0.75],
+                                            max_height_diff=0.01,
+                                            x_range=(-10, 10), 
+                                            y_range=(-10, 10),
+                                            z_range=(-0.01, 0.01)
+                                        )
+                                }
+                ),
+
+        }
+)
+
+
 # low-level observation config, used for pre-trained policy action
 @configclass
 class LowLevelObservationsCfg:
@@ -186,12 +280,12 @@ class Go1MimicSceneCfg(InteractiveSceneCfg):
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0167)),
         ray_alignment="base",
         pattern_cfg=patterns.LidarPatternCfg(
-            channels = 64,
+            channels = 1, # 1 channel vertically, only need 2D laser scan here
             vertical_fov_range=(0.0,0.0),
-            horizontal_fov_range=(-180.0,180.0),
-            horizontal_res=5.0,
+            horizontal_fov_range=(0, 360),
+            horizontal_res= 5.0,
         ),
-        max_distance= 5.0,
+        max_distance= 50.0,
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],
     )
@@ -486,6 +580,19 @@ def sphere_distance(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg, radius: fl
     min_dists, _ = dists.min(dim=1, keepdim=True)      # [N, 1]
     return min_dists - radius
 
+def lader_distance(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg) -> torch.Tensor:
+    # extract the used quantities (to enable type-hinting)
+    sensor: RayCaster = env.scene.sensors[sensor_cfg.name]
+    # sensor.data.pos_w: [N, 3], sensor.data.ray_hits_w: [N, B, 3]
+    pos = sensor.data.pos_w[:, None, :3]               # [N, 1, 3]
+    hits = sensor.data.ray_hits_w[..., :3]             # [N, B, 3]
+    # compute per-beam distance
+    dists = torch.norm(hits - pos, dim=-1)             # [N, B]
+    # post-process the missing casts (inf values), set them to a large number (e.g., max range of the lidar)
+    max_range = sensor.cfg.max_distance
+    dists = torch.where(torch.isinf(dists), torch.full_like(dists, max_range), dists)  # [N, B]
+    return dists
+
 @configclass
 class VisuoObservationsCfg:
     """Observation specifications for the MDP."""
@@ -510,10 +617,15 @@ class VisuoObservationsCfg:
             func=sphere_distance,
             params={"sensor_cfg": SceneEntityCfg("lidar_scanner"), "radius": 0.50},
         )
+        # added lader distance observation
+        lader_distance = ObsTerm(
+            func=lader_distance,
+            params={"sensor_cfg": SceneEntityCfg("lidar_scanner")},
+        )
 
         def __post_init__(self):
             self.enable_corruption = True  # can add disturbance to observation
-            self.concatenate_terms = False  # keep terms separate
+            self.concatenate_terms = False  # keep terms separate, mandatory for robomimic
     
     # observation groups
     policy: PolicyCfg = PolicyCfg()
@@ -531,9 +643,12 @@ class Go1MimicRoughEnvCfg(NavigationEnvCfg):
         self.scene.terrain = TerrainImporterCfg(
             prim_path="/World/ground", 
             terrain_type="generator",
-            terrain_generator=REPEATED_OBS_TERRAINS_CFG,
+            terrain_generator=DIS_OBS_TERRAINS_CFG,
             debug_vis=False
         )
+
+        # increase this for faster collection, this will not hinder the accuracy as long as it is not larger than decimation
+        self.sim.render_interval = 40
 
         # use the new observation config with vision
         self.observations = VisuoObservationsCfg()  

@@ -1,7 +1,7 @@
 {
     "algo_name": "bc",
     "experiment": {
-        "name": "bc_rnn_image_go1_nav_further",
+        "name": "bc_rnn_image_go1_nav_full_dataset",
         "validate": false,
         "logging": {
             "terminal_output_to_txt": true,
@@ -27,8 +27,8 @@
     },
     "train": {
         "data": null,
-        "num_data_workers": 4,
-        "hdf5_cache_mode": "low_dim",
+        "num_data_workers": 16,
+        "hdf5_cache_mode": "all",
         "hdf5_use_swmr": true,
         "hdf5_load_next_obs": false,
         "hdf5_normalize_obs": false,
@@ -46,7 +46,7 @@
         "goal_mode": null,
         "cuda": true,
         "batch_size": 32,
-        "num_epochs": 800,
+        "num_epochs": 1000,
         "seed": 101
     },
     "algo": {
