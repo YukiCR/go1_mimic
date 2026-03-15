@@ -284,7 +284,10 @@ def setup_teleop_device(callbacks: dict[str, Callable]) -> object:
             )
             # Create fallback teleop device
             if args_cli.teleop_device.lower() == "keyboard":
-                teleop_interface = Se2Keyboard(Se2KeyboardCfg())
+                teleop_interface = Se2Keyboard(Se2KeyboardCfg(
+                    v_x_sensitivity= 0.8,
+                    v_y_sensitivity= 0.8,
+                ))
             elif args_cli.teleop_device.lower() == "spacemouse":
                 teleop_interface = Se3SpaceMouse(Se3SpaceMouseCfg(pos_sensitivity=0.2, rot_sensitivity=0.5))
             else:

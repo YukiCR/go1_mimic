@@ -118,6 +118,10 @@ def rollout(policy, env, success_term, horizon, device):
         # TODO: figure out if is this fix a valid fix
         obs['depth_image'] = obs['depth_image'].unsqueeze(0)
 
+        # print dim and shape of lader distance
+        # print(f"Before unsqueeze, lader_distance shape: {obs['lader_distance'].shape}")
+        obs['lader_distance'] = obs['lader_distance'].unsqueeze(0)
+
         traj["obs"].append(obs)
 
         # Compute actions
