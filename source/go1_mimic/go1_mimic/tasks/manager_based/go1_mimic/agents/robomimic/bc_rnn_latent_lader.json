@@ -1,7 +1,7 @@
 {
     "algo_name": "bc",
     "experiment": {
-        "name": "bc_rnn_image_go1_nav_lader",
+        "name": "bc_rnn_go1_nav_latent_lader",
         "validate": false,
         "logging": {
             "terminal_output_to_txt": true,
@@ -45,7 +45,7 @@
         ],
         "goal_mode": null,
         "cuda": true,
-        "batch_size": 128,
+        "batch_size": 256,
         "num_epochs": 3000,
         "seed": 101
     },
@@ -125,7 +125,7 @@
             "horizon": 10,
             "hidden_dim": 512,
             "rnn_type": "LSTM",
-            "num_layers": 3,
+            "num_layers": 5,
             "open_loop": false,
             "kwargs": {
                 "bidirectional": false
@@ -152,12 +152,11 @@
                 "low_dim": [
                     "base_lin_vel",
                     "projected_gravity",
-                    "pose_command"
+                    "pose_command",
+                    "depth_latent"
                 ],
                 "rgb": [],
-                "depth": [
-                    "depth_image"
-                ],
+                "depth": [],
                 "scan": [                    
                     "lader_distance"
                 ]

@@ -135,10 +135,10 @@ REPEATED_OBS_TERRAINS_CFG = TerrainGeneratorCfg(
 
 
 BOX_OBS_TERRAINS_CFG = TerrainGeneratorCfg(
-    size=(15.0, 15.0),
+    size=(10.0, 10.0),
     border_width=3.0,
-    num_rows=2,
-    num_cols=2,
+    num_rows=1,
+    num_cols=1,
     horizontal_scale=0.1,
     vertical_scale=0.005,
     slope_threshold=0.75,
@@ -146,17 +146,17 @@ BOX_OBS_TERRAINS_CFG = TerrainGeneratorCfg(
     use_cache=False,
     sub_terrains={
         "box_array": MeshBoxTerrainCfg(
-                        box_height_range=(0.2, 0.2), 
+                        box_height_range=(3.0, 3.0), 
                         size=(20, 20),
                         platform_width=3.0,
                         flat_patch_sampling={
                             "target": FlatPatchSamplingCfg(
-                                        num_patches=3,
-                                        patch_radius=[0.2],
+                                        num_patches=1000,
+                                        patch_radius=[0.5, 1.0],
                                         max_height_diff=0.1,
                                         x_range=(-10, 10), 
-                                        y_range=(-10, 10),
-                                        z_range=(-0.01, 0.01)
+                                        y_range=(3, 10),
+                                        z_range=(-3.01, -2.99)
                                     )
                             }
                     )
@@ -167,8 +167,8 @@ BOX_OBS_TERRAINS_CFG = TerrainGeneratorCfg(
 DIS_OBS_TERRAINS_CFG = TerrainGeneratorCfg(
     size=(15.0, 15.0),
     border_width=3.0,
-    num_rows=10,
-    num_cols=10,
+    num_rows=5,
+    num_cols=5,
     horizontal_scale=0.1,
     vertical_scale=0.1,
     slope_threshold=0.75,
@@ -591,7 +591,11 @@ def lader_distance(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg) -> torch.Te
     # post-process the missing casts (inf values), set them to a large number (e.g., max range of the lidar)
     max_range = sensor.cfg.max_distance
     dists = torch.where(torch.isinf(dists), torch.full_like(dists, max_range), dists)  # [N, B]
-    return dists
+    # Add a channel dimension to match obs_utils ScanModality raw format: (..., L, C)
+    # obs_utils expects last dim to be channels (e.g., C=1 for single-beam lidar),
+    # so return shape [N, B, 1]. This will be processed into [N, 1, B] by the
+    # ScanModality processor.
+    return dists.unsqueeze(-1)  # [N, B, 1]
 
 @configclass
 class VisuoObservationsCfg:
@@ -621,6 +625,18 @@ class VisuoObservationsCfg:
         lader_distance = ObsTerm(
             func=lader_distance,
             params={"sensor_cfg": SceneEntityCfg("lidar_scanner")},
+        )
+        # add depth image latent, encoded by pre-trained encoder
+        depth_latent = ObsTerm(
+            func=mdp.image, params={"sensor_cfg": SceneEntityCfg("camera"), "data_type": "depth"},
+            modifiers=[
+                mdp.DepthAutoencoderModifierCfg(
+                    checkpoint_path="source/go1_mimic/go1_mimic/tasks/manager_based/go1_mimic/pretrained_encoder/go1_autoencoder_encoder.pt",
+                    max_batch_size=64,
+                    mean=1.77,
+                    std=2.58,
+                )
+            ]
         )
 
         def __post_init__(self):
@@ -664,6 +680,66 @@ class Go1MimicRoughEnvCfg(NavigationEnvCfg):
 
         # lengthen the command resampling time range
         self.commands.pose_command.resampling_time_range = (25,25)
+
+        # update episode length accordingly
+        self.episode_length_s = self.commands.pose_command.resampling_time_range[1]
+
+        self.image_obs_list = ["rgb_image"]
+
+
+
+### simple env with only a box in the middle
+@configclass
+class BoxEventCfg:
+    """Configuration for events."""
+
+    reset_base = EventTerm(
+        func=mdp.reset_root_state_uniform_and_terrian,
+        mode="reset",
+        params={
+            "pose_range": {"x": (-0.5, 0.5), "y": (-5.0, -4.0), "z": (-2.9, -2.9), "yaw": (-3.14, 3.14)},
+            "velocity_range": {
+                "x": (-0.0, 0.0),
+                "y": (-0.0, 0.0),
+                "z": (-0.0, 0.0),
+                "roll": (-0.0, 0.0),
+                "pitch": (-0.0, 0.0),
+                "yaw": (-0.0, 0.0),
+            },
+        },
+    )
+
+class Go1MimicBoxEnvCfg(NavigationEnvCfg):
+    # Post initialization
+    def __post_init__(self) -> None:
+        """Post initialization."""
+        super().__post_init__()
+
+        self.scene.terrain = TerrainImporterCfg(
+            prim_path="/World/ground", 
+            terrain_type="generator",
+            terrain_generator=BOX_OBS_TERRAINS_CFG,
+            debug_vis=False
+        )
+
+        # increase this for faster collection, this will not hinder the accuracy as long as it is not larger than decimation
+        self.sim.render_interval = 40
+
+        # use the new observation config with vision
+        # now depth latent cannot be used
+        self.observations = VisuoObservationsCfg()  
+
+        # override the reset event to randomize the terrain as well
+        self.events.reset_base = BoxEventCfg().reset_base
+
+        # add success termination
+        self.terminations = MimicTerminationsCfg()
+
+        # override the command generator to be terrain-based
+        self.commands.pose_command = RoughCommandsCfg().pose_command
+
+        # lengthen the command resampling time range
+        self.commands.pose_command.resampling_time_range = (35,35)
 
         # update episode length accordingly
         self.episode_length_s = self.commands.pose_command.resampling_time_range[1]

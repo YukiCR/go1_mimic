@@ -11,3 +11,4 @@ from .pre_trained_policy_action import *
 from .rewards import *  # noqa: F401, F403
 from .terminations import *
 from .events import *
+from .modifier import *  # modifier for depth images

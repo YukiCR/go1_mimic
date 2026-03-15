@@ -1,7 +1,7 @@
 {
     "algo_name": "bc",
     "experiment": {
-        "name": "bc_rnn_image_go1_nav_lader",
+        "name": "bc_rnn_go1_nav_lader_box",
         "validate": false,
         "logging": {
             "terminal_output_to_txt": true,
@@ -34,7 +34,7 @@
         "hdf5_normalize_obs": true,
         "hdf5_filter_key": null,
         "hdf5_validation_filter_key": null,
-        "seq_length": 10,
+        "seq_length": 20,
         "pad_seq_length": true,
         "frame_stack": 1,
         "pad_frame_stack": true,
@@ -122,10 +122,10 @@
         },
         "rnn": {
             "enabled": true,
-            "horizon": 10,
+            "horizon": 20,
             "hidden_dim": 512,
             "rnn_type": "LSTM",
-            "num_layers": 3,
+            "num_layers": 5,
             "open_loop": false,
             "kwargs": {
                 "bidirectional": false
@@ -155,9 +155,7 @@
                     "pose_command"
                 ],
                 "rgb": [],
-                "depth": [
-                    "depth_image"
-                ],
+                "depth": [],
                 "scan": [                    
                     "lader_distance"
                 ]
