@@ -66,3 +66,72 @@ import go1_mimic.tasks
 from isaaclab_tasks.utils import parse_env_cfg
 
 print("[INFO] DAgger collector imports successful")
+
+
+def create_env_with_recorder(task_name: str, dataset_path: str) -> gym.Env:
+    """Create environment configured for demonstration recording.
+
+    Args:
+        task_name: Name of the task/environment.
+        dataset_path: Path to save recorded demonstrations.
+
+    Returns:
+        Configured environment with recorder manager.
+    """
+    from isaaclab.envs.mdp.recorders.recorders_cfg import ActionStateRecorderManagerCfg
+    from isaaclab.managers import DatasetExportMode
+    import os
+
+    # Parse environment config
+    env_cfg = parse_env_cfg(task_name, device=args_cli.device, num_envs=1, use_fabric=True)
+
+    # Set observations to dictionary mode for robomimic
+    env_cfg.observations.policy.concatenate_terms = False
+
+    # Disable timeout termination (we want episodes to run until success/intervention)
+    env_cfg.terminations.time_out = None
+
+    # Extract success term for checking
+    success_term = None
+    if hasattr(env_cfg.terminations, "success"):
+        success_term = env_cfg.terminations.success
+        env_cfg.terminations.success = None
+
+    # Configure recorder manager
+    output_dir = os.path.dirname(dataset_path)
+    output_file_name = os.path.splitext(os.path.basename(dataset_path))[0]
+
+    env_cfg.recorders = ActionStateRecorderManagerCfg()
+    env_cfg.recorders.dataset_export_dir_path = output_dir
+    env_cfg.recorders.dataset_filename = output_file_name
+    env_cfg.recorders.dataset_export_mode = DatasetExportMode.EXPORT_SUCCEEDED_ONLY
+    env_cfg.recorders.export_in_record_pre_reset = False  # We'll handle export manually
+
+    # Create output directory if needed
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Create environment
+    env = gym.make(task_name, cfg=env_cfg).unwrapped
+
+    return env, success_term
+
+
+def setup_teleop_device(intervention_key: str) -> object:
+    """Set up keyboard teleoperation device.
+
+    Args:
+        intervention_key: Key that triggers intervention.
+
+    Returns:
+        Configured teleop device.
+    """
+    from isaaclab.devices import Se2Keyboard, Se2KeyboardCfg
+
+    teleop_cfg = Se2KeyboardCfg(
+        v_x_sensitivity=0.8,
+        v_y_sensitivity=0.8,
+    )
+    teleop_interface = Se2Keyboard(teleop_cfg)
+
+    return teleop_interface
