@@ -135,3 +135,60 @@ def setup_teleop_device(intervention_key: str) -> object:
     teleop_interface = Se2Keyboard(teleop_cfg)
 
     return teleop_interface
+
+
+def load_policy(checkpoint_path: str, device: torch.device):
+    """Load robomimic policy from checkpoint.
+
+    Args:
+        checkpoint_path: Path to the checkpoint file.
+        device: Device to load policy on.
+
+    Returns:
+        Loaded policy and checkpoint dictionary.
+    """
+    policy, ckpt_dict = FileUtils.policy_from_checkpoint(
+        ckpt_path=checkpoint_path,
+        device=device,
+        verbose=False,
+    )
+    return policy, ckpt_dict
+
+
+def preprocess_observations(obs_dict: dict, env: gym.Env) -> dict:
+    """Preprocess observations for robomimic policy inference.
+
+    Args:
+        obs_dict: Raw observation dictionary from environment.
+        env: Environment instance.
+
+    Returns:
+        Preprocessed observation dictionary.
+    """
+    obs = copy.deepcopy(obs_dict["policy"])
+
+    # Squeeze batch dimension
+    for key in obs:
+        obs[key] = torch.squeeze(obs[key])
+
+    # Process image observations if present
+    if hasattr(env.cfg, "image_obs_list"):
+        for image_name in env.cfg.image_obs_list:
+            if image_name in obs_dict["policy"].keys():
+                image = torch.squeeze(obs_dict["policy"][image_name])
+                image = image.permute(2, 0, 1).clone().float()
+                image = image / 255.0
+                image = image.clip(0.0, 1.0)
+                obs[image_name] = image
+
+    # Handle depth_image shape if present
+    if "depth_image" in obs:
+        if len(obs["depth_image"].shape) == 2:
+            obs["depth_image"] = obs["depth_image"].unsqueeze(0)
+
+    # Handle lader_distance shape if present
+    if "lader_distance" in obs:
+        if len(obs["lader_distance"].shape) == 1:
+            obs["lader_distance"] = obs["lader_distance"].unsqueeze(0)
+
+    return obs
