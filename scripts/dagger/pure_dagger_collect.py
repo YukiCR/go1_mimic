@@ -186,6 +186,9 @@ def preprocess_observations(obs_dict: dict, env: gym.Env) -> dict:
                 image = image.clip(0.0, 1.0)
                 obs[image_name] = image
 
+    # TODO: The following observation preprocessing is environment-specific.
+    # These shape fixes assume specific observation structures (depth_image, lader_distance).
+    # For general use, this should be made configurable or use the environment's observation spec.
     # Handle depth_image shape if present
     if "depth_image" in obs:
         if len(obs["depth_image"].shape) == 2:
@@ -393,7 +396,6 @@ def main():
                 current_state = STATE_POLICY
                 debounce_counter = 0
                 action = a_policy  # Use policy action, not zero
-                # teleop_interface.reset()  # Reset teleop to clear stale inputs
                 print(f"[INFO] Switched to POLICY mode")
             else:
                 # Continue in human mode
@@ -434,7 +436,6 @@ def main():
             # Reset for new rollout
             obs_dict, _ = env.reset()
             policy.start_episode()
-            # teleop_interface.reset()
             current_state = STATE_POLICY
             debounce_counter = 0
             segment_step_count = 0
