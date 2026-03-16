@@ -89,8 +89,15 @@ def merge_datasets(original_path: str, new_path: str, output_path: str) -> str:
             existing_demos = [k for k in f_out["data"].keys() if k.startswith("demo_")]
             demo_count = len(existing_demos)
 
-            # Get new demos
-            new_demos = [k for k in f_new["data"].keys() if k.startswith("demo_")]
+            # Get new demos (filter out empty demos with no actions)
+            new_demos = []
+            for k in f_new["data"].keys():
+                if k.startswith("demo_"):
+                    demo_group = f_new[f"data/{k}"]
+                    if "actions" in demo_group and demo_group["actions"].shape[0] > 0:
+                        new_demos.append(k)
+                    else:
+                        print(f"[WARNING] Skipping empty demo '{k}' (no actions or zero-length)")
 
             print(f"[INFO] Original demos: {demo_count}, New demos: {len(new_demos)}")
 
