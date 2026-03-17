@@ -424,6 +424,7 @@ def main():
                     total_segments = export_segment(env, segment_step_count, total_segments)
                 else:
                     print(f"[INFO] Discarding short segment at episode end ({segment_step_count} < {args_cli.min_segment_length})")
+                    env.recorder_manager.reset()
 
             # Log episode status
             if is_success:
