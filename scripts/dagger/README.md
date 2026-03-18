@@ -20,13 +20,14 @@ Pure DAgger data collection with implicit intervention detection. This is the re
 **Usage:**
 ```bash
 python scripts/dagger/pure_dagger_collect.py \
-    --task ILBL-Go1-Mimic-Box-v0 \
-    --checkpoint logs/robomimic/.../model_epoch_60.pth \
+    --task ILBL-Go1-Mimic-Rough-v0 \
+    --checkpoint logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/20260316022213/models/model_epoch_560.pth \
     --dataset_file datasets/pure_dagger_demos.hdf5 \
-    --num_segments 100 \
-    --horizon 50 \
+    --num_segments 200 \
+    --horizon 100 \
     --debounce_steps 2 \
-    --min_segment_length 5
+    --min_segment_length 5 \
+    --enable_cameras
 ```
 
 **Key Arguments:**
@@ -100,11 +101,12 @@ Fine-tunes a policy on the extended dataset (original + DAgger demos).
 **Usage:**
 ```bash
 python scripts/dagger/dagger_finetune.py \
-    --checkpoint logs/robomimic/.../model_epoch_60.pth \
-    --original_dataset datasets/original.hdf5 \
-    --new_dataset datasets/dagger_demos.hdf5 \
-    --output_dir logs/robomimic/dagger_finetuned \
-    --epochs 50
+    --checkpoint logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/20260316022213/models/model_epoch_560.pth \
+    --original_dataset datasets/latent/pretrain/dataset_latent_straight_merged.hdf5 \
+    --new_dataset datasets/latent/dagger/latent_test.hdf5 \
+    --output_dir logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_0 \
+    --learning_rate 0.0001
+    --epochs 10
 ```
 
 **Key Arguments:**

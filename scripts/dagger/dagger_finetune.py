@@ -166,6 +166,12 @@ def finetune_policy(
     print(f"  Logs: {log_dir}")
     print(f"  Checkpoints: {ckpt_dir}")
 
+    # Setup log file redirection (similar to train.py)
+    if config.experiment.logging.terminal_output_to_txt:
+        logger = PrintLogger(os.path.join(log_dir, "log.txt"))
+        sys.stdout = logger
+        sys.stderr = logger
+
     # Get device
     device = TorchUtils.get_torch_device(try_to_use_cuda=True)
     print(f"[INFO] Using device: {device}")

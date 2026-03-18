@@ -1,0 +1,19 @@
+# Add checkpoint paths below (one per line)
+# Example: /path/to/dagger/roll_1/checkpoint.pt
+
+logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/20260316022213/models/model_epoch_560.pth
+logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_0/bc_rnn_go1_nav_latent_lader/20260316054440/models/model_epoch_300.pth
+logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_1/bc_rnn_go1_nav_latent_lader/20260316175506/models/model_epoch_300.pth
+logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_2/bc_rnn_go1_nav_latent_lader/20260316221242/models/model_epoch_500.pth
+logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_3/bc_rnn_go1_nav_latent_lader/20260318021829/models/model_epoch_500.pth
+
+---
+
+# Add dataset paths below (one per line, corresponding to checkpoints above)
+# Example: /path/to/dagger/roll_1/dataset.hdf5
+
+datasets/latent/pretrain/dataset_latent_straight_merged.hdf5
+logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_0/merged_dataset.hdf5
+logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_1/merged_dataset.hdf5
+logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_2/merged_dataset.hdf5
+logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_3/merged_dataset.hdf5

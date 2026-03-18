@@ -56,6 +56,9 @@ parser.add_argument(
 parser.add_argument(
     "--norm_factor_max", type=float, default=None, help="Optional: maximum normalization factor."
 )
+parser.add_argument(
+    "--reset_key", type=str, default="R", help="Key to press for resetting current episode."
+)
 
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
@@ -128,8 +131,11 @@ def create_env_with_recorder(task_name: str, dataset_path: str) -> tuple[gym.Env
     return env, success_term
 
 
-def setup_teleop_device() -> Se2Keyboard:
+def setup_teleop_device(reset_callback: callable) -> Se2Keyboard:
     """Set up keyboard teleoperation device.
+
+    Args:
+        reset_callback: Function to call when reset key is pressed.
 
     Returns:
         Configured teleop device.
@@ -139,6 +145,10 @@ def setup_teleop_device() -> Se2Keyboard:
         v_y_sensitivity=0.8,
     )
     teleop_interface = Se2Keyboard(teleop_cfg)
+
+    # Register the reset callback
+    teleop_interface.add_callback(args_cli.reset_key.upper(), reset_callback)
+
     return teleop_interface
 
 
@@ -307,6 +317,13 @@ def main():
     segment_step_count = 0
     total_segments = 0
     total_step_count = 0
+    reset_requested = False
+
+    def on_reset():
+        """Callback when reset key is pressed."""
+        nonlocal reset_requested
+        reset_requested = True
+        print(f"[INFO] Reset requested by user (key: '{args_cli.reset_key}').")
 
     # Set seeds
     torch.manual_seed(args_cli.seed)
@@ -326,9 +343,9 @@ def main():
     env, success_term = create_env_with_recorder(args_cli.task, args_cli.dataset_file)
     env.seed(args_cli.seed)
 
-    # Setup teleop device
-    print(f"[INFO] Setting up teleop device")
-    teleop_interface = setup_teleop_device()
+    # Setup teleop device with reset callback
+    print(f"[INFO] Setting up teleop device (reset key: '{args_cli.reset_key}')")
+    teleop_interface = setup_teleop_device(on_reset)
 
     # Initialize human action visualizer
     print(f"[INFO] Initializing human action visualizer")
@@ -337,6 +354,7 @@ def main():
     print(f"[INFO] Starting Pure DAgger collection.")
     print(f"[INFO] Target: {args_cli.num_segments} segments")
     print(f"[INFO] Debounce: {args_cli.debounce_steps} steps, Min segment: {args_cli.min_segment_length} steps")
+    print(f"[INFO] Press '{args_cli.reset_key}' to reset current episode")
     print("=" * 80)
 
     # Reset environment and policy
@@ -414,8 +432,8 @@ def main():
         if success_term is not None:
             is_success = bool(success_term.func(env, **success_term.params)[0])
 
-        # Handle episode end
-        episode_ended = is_success or terminated or truncated or total_step_count >= args_cli.horizon
+        # Handle episode end (including user reset request)
+        episode_ended = is_success or terminated or truncated or total_step_count >= args_cli.horizon or reset_requested
 
         if episode_ended:
             if current_state == STATE_HUMAN:
@@ -427,7 +445,9 @@ def main():
                     env.recorder_manager.reset()
 
             # Log episode status
-            if is_success:
+            if reset_requested:
+                print(f"[INFO] Episode reset by user")
+            elif is_success:
                 print(f"[INFO] Episode ended with success")
             elif terminated or truncated:
                 print(f"[INFO] Episode ended (terminated/truncated)")
@@ -441,6 +461,7 @@ def main():
             debounce_counter = 0
             segment_step_count = 0
             total_step_count = 0
+            reset_requested = False
 
     print("=" * 80)
     print(f"[INFO] Collection complete. {total_segments} segments recorded.")
