@@ -5,6 +5,33 @@
 
 """Command generators for indoor navigation environments."""
 
+# NOTE: Workaround for IsaacLab raycast_mesh bug (ops.py:123)
+#
+# The raycast_mesh function has a bug when using return_distance=True with 2D inputs
+# of shape (N, 3). At line 63, it stores `shape = ray_starts.shape` which captures
+# the original input shape (N, 3). Later at line 123, when return_distance=True,
+# it attempts:
+#     ray_distance = ray_distance.to(device).view(shape[0], shape[1])
+#
+# For 2D input (N, 3):
+#   - ray_distance has shape (N,) after raycasting (one scalar distance per ray)
+#   - view(shape[0], shape[1]) = view(N, 3) tries to reshape N elements into N*3 slots
+#   - This fails with: "shape '[N, 3]' is invalid for input of size N"
+#
+# The function works correctly only for 3D inputs (B, N, 3) where shape[0]=B and
+# shape[1]=N, producing output shape (B, N).
+#
+# To use return_distance=True correctly with 2D inputs, the fix would be to change
+# line 123 from:
+#     ray_distance = ray_distance.to(device).view(shape[0], shape[1])
+# to:
+#     ray_distance = ray_distance.to(device).view(shape[:-1])
+#
+# This would correctly produce shape (N,) for 2D input and (B, N) for 3D input.
+#
+# Until this is fixed upstream, we compute distance manually from ray_hits using
+# torch.norm(ray_hits[..., :2] - starts[..., :2], dim=-1).
+
 from __future__ import annotations
 
 from dataclasses import MISSING
@@ -222,10 +249,9 @@ class IndoorPose2dCommand(UniformPose2dCommand):
         starts[:, 2] = starts[:, 2] + lateral_z_offset
         dirs = card_dirs.unsqueeze(0).expand(N, -1, -1).reshape(-1, 3)
 
-        # Note: We do NOT use return_distance=True because raycast_mesh has a bug
-        # where it tries to reshape the distance tensor as view(shape[0], shape[1])
-        # which fails when input is (N*4, 3) shaped.
-        # Instead, we compute distance manually from ray_hits.
+        # Note: We do NOT use return_distance=True because of IsaacLab bug (see file
+        # header note). raycast_mesh tries view(shape[0], shape[1]) on 2D inputs
+        # which crashes. Compute distance manually from ray_hits instead.
         ray_hits, _, _, _ = raycast_mesh(starts, dirs, wp_mesh)
         # ray_hits: (N*4, 3) — inf components for rays that miss all geometry
 
