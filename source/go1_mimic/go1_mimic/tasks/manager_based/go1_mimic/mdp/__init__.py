@@ -12,3 +12,4 @@ from .rewards import *  # noqa: F401, F403
 from .terminations import *
 from .events import *
 from .modifier import *  # modifier for depth images
+from .commands import *  # indoor command generators

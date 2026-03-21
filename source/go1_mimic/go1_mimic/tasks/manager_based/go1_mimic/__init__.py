@@ -52,3 +52,13 @@ gym.register(
         "robomimic_bc_cfg_entry_point": f"{agents.__name__}:robomimic/bc_rnn_lader_box.json",
     },
 )
+
+gym.register(
+    id="ILBL-Go1-Mimic-Indoor-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.go1_mimic_env_cfg:Go1MimicIndoorEnvCfg",
+        "robomimic_bc_cfg_entry_point": f"{agents.__name__}:robomimic/bc_rnn_lader_box.json",
+    },
+)

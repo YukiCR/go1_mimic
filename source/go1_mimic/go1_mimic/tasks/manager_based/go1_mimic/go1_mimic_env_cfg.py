@@ -745,3 +745,60 @@ class Go1MimicBoxEnvCfg(NavigationEnvCfg):
         self.episode_length_s = self.commands.pose_command.resampling_time_range[1]
 
         self.image_obs_list = ["rgb_image"]
+
+
+class Go1MimicIndoorEnvCfg(NavigationEnvCfg):
+    # Post initialization
+    def __post_init__(self) -> None:
+        """Post initialization."""
+        super().__post_init__()
+
+        self.scene.terrain = TerrainImporterCfg(
+            prim_path="/World/ground", 
+            terrain_type="usd",
+            # usd_path=ISAAC_NUCLEUS_DIR + "/Environments/Simple_Warehouse/full_warehouse.usd",
+            usd_path="/home/chengrui/wk/ILBL_isaac/full_warehouse_no_ceiling.usd",
+            terrain_generator=None,
+            debug_vis=False
+        )
+
+        # increase this for faster collection, this will not hinder the accuracy as long as it is not larger than decimation
+        self.sim.render_interval = 40
+
+        # use the new observation config with vision
+        # now depth latent cannot be used
+        self.observations = VisuoObservationsCfg()  
+
+        # override the reset event to randomize the terrain as well
+        # self.events.reset_base = BoxEventCfg().reset_base
+
+        # add success termination
+        self.terminations = MimicTerminationsCfg()
+
+        # Override the command generator with automatic flat-patch sampling.
+        # IndoorPose2dCommand will:
+        #   1. Traverse all mesh prims under the USD terrain prim
+        #   2. Build a warp mesh in world coordinates
+        #   3. Call find_flat_patches (raycasting) to find obstacle-free floor patches
+        #   4. Inject them into terrain._terrain_flat_patches["target"]
+        # Tune x_range / y_range to match the walkable area of your warehouse USD.
+        self.commands.pose_command = mdp.IndoorPose2dCommandCfg(
+            asset_name="robot",
+            simple_heading=True,
+            resampling_time_range=(35, 35),
+            debug_vis=True,
+            ranges=mdp.IndoorPose2dCommandCfg.Ranges(heading=(-math.pi, math.pi)),
+            flat_patch_sampling=FlatPatchSamplingCfg(
+                num_patches=200,
+                patch_radius=[0.5, 1.0],    # check patches of two radii for robustness
+                x_range=(-20.0, 20.0),      # adjust to warehouse floor extent
+                y_range=(-20.0, 20.0),
+                z_range=(-0.1, 0.1),        # accept only ground-level patches
+                max_height_diff=0.05,       # strict flatness: 5 cm height variation allowed
+            ),
+        )
+
+        # update episode length accordingly
+        self.episode_length_s = self.commands.pose_command.resampling_time_range[1]
+
+        self.image_obs_list = ["rgb_image"]
