@@ -757,6 +757,7 @@ class Go1MimicIndoorEnvCfg(NavigationEnvCfg):
             prim_path="/World/ground", 
             terrain_type="usd",
             # usd_path=ISAAC_NUCLEUS_DIR + "/Environments/Simple_Warehouse/full_warehouse.usd",
+            # usd_path=ISAAC_NUCLEUS_DIR + "/Environments/Hospital/hospital.usd",
             usd_path="/home/chengrui/wk/ILBL_isaac/full_warehouse_no_ceiling.usd",
             terrain_generator=None,
             debug_vis=False
@@ -767,10 +768,24 @@ class Go1MimicIndoorEnvCfg(NavigationEnvCfg):
 
         # use the new observation config with vision
         # now depth latent cannot be used
-        self.observations = VisuoObservationsCfg()  
+        self.observations = VisuoObservationsCfg()
 
-        # override the reset event to randomize the terrain as well
-        # self.events.reset_base = BoxEventCfg().reset_base
+        # override the reset event to sample random start positions from flat patches
+        self.events.reset_base = EventTerm(
+            func=mdp.reset_root_state_indoor,
+            mode="reset",
+            params={
+                "pose_range": {"roll": (-0.1, 0.1), "pitch": (-0.1, 0.1), "yaw": (-3.14, 3.14)},
+                "velocity_range": {
+                    "x": (-0.0, 0.0),
+                    "y": (-0.0, 0.0),
+                    "z": (-0.0, 0.0),
+                    "roll": (-0.0, 0.0),
+                    "pitch": (-0.0, 0.0),
+                    "yaw": (-0.0, 0.0),
+                },
+            },
+        )
 
         # add success termination
         self.terminations = MimicTerminationsCfg()
@@ -789,12 +804,12 @@ class Go1MimicIndoorEnvCfg(NavigationEnvCfg):
             debug_vis=True,
             ranges=mdp.IndoorPose2dCommandCfg.Ranges(heading=(-math.pi, math.pi)),
             flat_patch_sampling=FlatPatchSamplingCfg(
-                num_patches=200,
-                patch_radius=[0.5, 1.0],    # check patches of two radii for robustness
-                x_range=(-20.0, 20.0),      # adjust to warehouse floor extent
-                y_range=(-20.0, 20.0),
+                num_patches=300,
+                patch_radius=[0.25, 0.5, 0.75, 1.0, 1.25],    # check patches of two radii for robustness
+                x_range=(-60.0, 10.0),      # adjust to warehouse floor extent
+                y_range=(5.0, 65.0),
                 z_range=(-0.1, 0.1),        # accept only ground-level patches
-                max_height_diff=0.05,       # strict flatness: 5 cm height variation allowed
+                max_height_diff=0.10,       # strict flatness: 5 cm height variation allowed
             ),
         )
 

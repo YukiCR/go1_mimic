@@ -139,6 +139,11 @@ class IndoorPose2dCommand(UniformPose2dCommand):
             # Store as (1, 1, N, 3) to match TerrainBasedPose2dCommand conventions
             self.terrain._terrain_flat_patches["target"] = patches.unsqueeze(0).unsqueeze(0)
 
+            # Also store init_pos patches for random starting positions
+            # Use the same patches for init_pos (or could use separate config if needed)
+            self.terrain._terrain_flat_patches["init_pos"] = patches.unsqueeze(0).unsqueeze(0)
+            print(f"[IndoorPose2dCommand] Stored {patches.shape[0]} patches for init_pos sampling.")
+
         # Keep a fast reference for _resample_command
         self.valid_targets: torch.Tensor = self.terrain.flat_patches["target"]  # (1, 1, N, 3)
 
