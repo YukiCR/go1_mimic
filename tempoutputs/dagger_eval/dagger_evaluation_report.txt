@@ -1,0 +1,55 @@
+================================================================================
+DAgger Evaluation Report
+================================================================================
+
+Task: ILBL-Go1-Mimic-Rough-v0
+Number of rollouts per checkpoint: 200
+Horizon per rollout: 100
+Seed: 101
+
+--------------------------------------------------------------------------------
+Results Summary
+--------------------------------------------------------------------------------
+
+Roll     Success Rate    Data Amount     Checkpoint                    
+--------------------------------------------------------------------------------
+1        0.0600          39966           model_epoch_560.pth           
+2        0.7450          44438           model_epoch_300.pth           
+3        0.7550          48549           model_epoch_300.pth           
+4        0.7800          53259           model_epoch_500.pth           
+5        0.8500          63054           model_epoch_500.pth           
+
+================================================================================
+Detailed Paths
+================================================================================
+
+Roll 1:
+  Checkpoint: logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/20260316022213/models/model_epoch_560.pth
+  Dataset:    datasets/latent/pretrain/dataset_latent_straight_merged.hdf5
+  Success Rate: 0.0600
+  Data Amount:  39966 samples
+
+Roll 2:
+  Checkpoint: logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_0/bc_rnn_go1_nav_latent_lader/20260316054440/models/model_epoch_300.pth
+  Dataset:    logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_0/merged_dataset.hdf5
+  Success Rate: 0.7450
+  Data Amount:  44438 samples
+
+Roll 3:
+  Checkpoint: logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_1/bc_rnn_go1_nav_latent_lader/20260316175506/models/model_epoch_300.pth
+  Dataset:    logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_1/merged_dataset.hdf5
+  Success Rate: 0.7550
+  Data Amount:  48549 samples
+
+Roll 4:
+  Checkpoint: logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_2/bc_rnn_go1_nav_latent_lader/20260316221242/models/model_epoch_500.pth
+  Dataset:    logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_2/merged_dataset.hdf5
+  Success Rate: 0.7800
+  Data Amount:  53259 samples
+
+Roll 5:
+  Checkpoint: logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_3/bc_rnn_go1_nav_latent_lader/20260318021829/models/model_epoch_500.pth
+  Dataset:    logs/robomimic/ILBL-Go1-Mimic-Rough-v0/bc_rnn_go1_nav_latent_lader/dagger_finetuned_3/merged_dataset.hdf5
+  Success Rate: 0.8500
+  Data Amount:  63054 samples
+

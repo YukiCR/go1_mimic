@@ -24,9 +24,11 @@ from isaaclab.sensors import CameraCfg, TiledCameraCfg, ContactSensorCfg, RayCas
 from isaaclab.terrains import TerrainImporterCfg, TerrainGeneratorCfg, MeshRepeatedBoxesTerrainCfg, MeshRepeatedCylindersTerrainCfg, MeshRepeatedPyramidsTerrainCfg, MeshBoxTerrainCfg, HfDiscreteObstaclesTerrainCfg, FlatPatchSamplingCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR, check_file_path, read_file
+from isaaclab.utils.modifiers import ModifierCfg
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
 import go1_mimic.tasks.manager_based.go1_mimic.mdp as mdp # extends the isaaclab.envs.mdp with custom functions
+from go1_mimic.tasks.manager_based.go1_mimic.mdp.modifier import pose_command_to_heading_error
 
 ##
 # Pre-defined configs
@@ -610,7 +612,15 @@ class VisuoObservationsCfg:
         projected_gravity = ObsTerm(func=mdp.projected_gravity)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose_command"})
         # added heading observation for navigation
-        heading = ObsTerm(func=mdp.base_heading)
+        heading_abs = ObsTerm(func=mdp.base_heading)
+        # added heading error to target (computed from pose_command via modifier)
+        heading_error = ObsTerm(
+            func=mdp.generated_commands,
+            params={"command_name": "pose_command"},
+            modifiers=[
+                ModifierCfg(func=pose_command_to_heading_error)
+            ]
+        )
         # added imgae observations
         rgb_image = ObsTerm(
             func=mdp.image, params={"sensor_cfg": SceneEntityCfg("camera"), "data_type": "rgb"}

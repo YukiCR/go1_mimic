@@ -19,6 +19,31 @@ def depth_one_col(data: torch.Tensor) -> torch.Tensor:
     return data[:, :, 0, 0]
 
 
+def pose_command_to_heading_error(data: torch.Tensor) -> torch.Tensor:
+    """Compute heading error from pose command data.
+
+    This modifier takes pose command data of shape [B, 7] containing (x, y, z, qw, qx, qy, qz)
+    in the robot's base frame, and computes the heading error as atan2(y, x), which represents
+    the angle from the robot's forward direction to the target position in the xy-plane.
+
+    Args:
+        data: The pose command data of shape [B, 7] where B is the batch size.
+              The first two elements are (x, y) relative position in robot frame.
+
+    Returns:
+        Heading error tensor of shape [B, 1] in radians.
+    """
+    # Extract relative x, y position to target
+    rel_x = data[:, 0]  # x position in robot frame
+    rel_y = data[:, 1]  # y position in robot frame
+
+    # Compute heading error as atan2(y, x)
+    # This gives the angle from robot's forward direction to the target
+    heading_error = torch.atan2(rel_y, rel_x)
+
+    return heading_error.unsqueeze(-1)  # Shape: [B, 1]
+
+
 class DepthAutoencoderModifier(ModifierBase):
     """Modifier that encodes depth images into latent vectors using a pre-trained autoencoder.
 
