@@ -609,6 +609,8 @@ class VisuoObservationsCfg:
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
         projected_gravity = ObsTerm(func=mdp.projected_gravity)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose_command"})
+        # added heading observation for navigation
+        heading = ObsTerm(func=mdp.base_heading)
         # added imgae observations
         rgb_image = ObsTerm(
             func=mdp.image, params={"sensor_cfg": SceneEntityCfg("camera"), "data_type": "rgb"}

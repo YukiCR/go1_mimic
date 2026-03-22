@@ -13,3 +13,4 @@ from .terminations import *
 from .events import *
 from .modifier import *  # modifier for depth images
 from .commands import *  # indoor command generators
+from .observations import *  # custom observation terms
