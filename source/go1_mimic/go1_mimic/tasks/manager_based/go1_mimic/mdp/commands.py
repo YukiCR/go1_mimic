@@ -31,6 +31,8 @@
 #
 # Until this is fixed upstream, we compute distance manually from ray_hits using
 # torch.norm(ray_hits[..., :2] - starts[..., :2], dim=-1).
+# 
+# This bug seems to have been reported by XiaoYi-Wei in https://github.com/isaac-sim/IsaacLab/pull/3298
 
 from __future__ import annotations
 

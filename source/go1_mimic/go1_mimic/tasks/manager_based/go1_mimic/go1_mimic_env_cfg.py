@@ -20,12 +20,13 @@ from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.scene import InteractiveSceneCfg
-from isaaclab.sensors import CameraCfg, TiledCameraCfg, ContactSensorCfg, RayCasterCfg, RayCaster, patterns
+from isaaclab.sensors import CameraCfg, TiledCameraCfg, ContactSensorCfg, RayCasterCfg, RayCaster, patterns, MultiMeshRayCasterCfg, MultiMeshRayCaster
 from isaaclab.terrains import TerrainImporterCfg, TerrainGeneratorCfg, MeshRepeatedBoxesTerrainCfg, MeshRepeatedCylindersTerrainCfg, MeshRepeatedPyramidsTerrainCfg, MeshBoxTerrainCfg, HfDiscreteObstaclesTerrainCfg, FlatPatchSamplingCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR, check_file_path, read_file
 from isaaclab.utils.modifiers import ModifierCfg
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+from isaaclab.envs.common import ViewerCfg
 
 import go1_mimic.tasks.manager_based.go1_mimic.mdp as mdp # extends the isaaclab.envs.mdp with custom functions
 from go1_mimic.tasks.manager_based.go1_mimic.mdp.modifier import pose_command_to_heading_error
@@ -277,7 +278,25 @@ class Go1MimicSceneCfg(InteractiveSceneCfg):
     robot: ArticulationCfg = UNITREE_GO1_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
     # sensors
-    lidar_scanner = RayCasterCfg(
+    # lidar_scanner = RayCasterCfg(
+    #     prim_path="{ENV_REGEX_NS}/Robot/trunk",
+    #     offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0167)),
+    #     ray_alignment="base",
+    #     pattern_cfg=patterns.LidarPatternCfg(
+    #         channels = 1, # 1 channel vertically, only need 2D laser scan here
+    #         vertical_fov_range=(0.0,0.0),
+    #         horizontal_fov_range=(0, 360),
+    #         horizontal_res= 5.0,
+    #     ),
+    #     max_distance= 50.0,
+    #     debug_vis=False,
+    #     mesh_prim_paths=["/World/ground"],
+    # )
+
+    # NOTE: use multimesh rayster instead of caycaster for usd terrians
+    # multimesh merges all submeshes, whereas raycaster does not
+    # fail to use multimesh may lead to missing desired beams
+    lidar_scanner = MultiMeshRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/trunk",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0167)),
         ray_alignment="base",
@@ -766,13 +785,22 @@ class Go1MimicIndoorEnvCfg(NavigationEnvCfg):
         super().__post_init__()
 
         self.scene.terrain = TerrainImporterCfg(
-            prim_path="/World/ground", 
+            prim_path="/World/ground",
             terrain_type="usd",
             # usd_path=ISAAC_NUCLEUS_DIR + "/Environments/Simple_Warehouse/full_warehouse.usd",
             # usd_path=ISAAC_NUCLEUS_DIR + "/Environments/Hospital/hospital.usd",
             usd_path="/home/chengrui/wk/ILBL_isaac/full_warehouse_no_ceiling.usd",
             terrain_generator=None,
             debug_vis=False
+        )
+
+        # Configure the viewer camera for the warehouse environment
+        # Position camera at elevated position to see a larger portion of the warehouse
+        self.viewer = ViewerCfg(
+            eye=(-10.0, 17.0, 45.0),      # Camera position: elevated above the center of warehouse
+            lookat=(-10.0, 17.0, 0.0),    # Look at the center of the warehouse floor
+            origin_type="world",          # World coordinates
+            resolution=(1280*2, 720*2),       # Resolution
         )
 
         # increase this for faster collection, this will not hinder the accuracy as long as it is not larger than decimation
@@ -812,11 +840,11 @@ class Go1MimicIndoorEnvCfg(NavigationEnvCfg):
         self.commands.pose_command = mdp.IndoorPose2dCommandCfg(
             asset_name="robot",
             simple_heading=True,
-            resampling_time_range=(35, 35),
+            resampling_time_range=(80, 80),
             debug_vis=True,
             ranges=mdp.IndoorPose2dCommandCfg.Ranges(heading=(-math.pi, math.pi)),
             flat_patch_sampling=FlatPatchSamplingCfg(
-                num_patches=300,
+                num_patches=2000, # large sufficient for diverse strating point and goal
                 patch_radius=[0.25, 0.5, 0.75, 1.0, 1.25],    # check patches of two radii for robustness
                 x_range=(-60.0, 10.0),      # adjust to warehouse floor extent
                 y_range=(5.0, 65.0),

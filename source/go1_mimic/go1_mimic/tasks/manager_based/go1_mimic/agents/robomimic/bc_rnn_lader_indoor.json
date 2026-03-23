@@ -152,7 +152,9 @@
                 "low_dim": [
                     "base_lin_vel",
                     "projected_gravity",
-                    "pose_command"
+                    "pose_command",
+                    "heading_abs",
+                    "heading_error"
                 ],
                 "rgb": [],
                 "depth": [],

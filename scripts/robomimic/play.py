@@ -122,6 +122,9 @@ def rollout(policy, env, success_term, horizon, device):
         # print(f"Before unsqueeze, lader_distance shape: {obs['lader_distance'].shape}")
         obs['lader_distance'] = obs['lader_distance'].unsqueeze(0)
 
+        obs['heading_abs'] = obs['heading_abs'].unsqueeze(0)
+        obs['heading_error'] = obs['heading_error'].unsqueeze(0)
+
         traj["obs"].append(obs)
 
         # Compute actions
